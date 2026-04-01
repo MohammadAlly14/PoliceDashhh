@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { complaintsApi } from '../services/api';
 import './ComplaintTracking.css';
 
@@ -7,6 +7,25 @@ export default function ComplaintTracking() {
   const [complaint, setComplaint] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+  const [lastCheckedAt, setLastCheckedAt] = useState(null);
+
+  const fetchComplaintStatus = async (id, { silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+    }
+
+    try {
+      const response = await complaintsApi.getComplaintStatus(id);
+      setComplaint(response.data);
+      setLastCheckedAt(new Date());
+      return response.data;
+    } finally {
+      if (!silent) {
+        setLoading(false);
+      }
+    }
+  };
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -19,15 +38,34 @@ export default function ComplaintTracking() {
     }
 
     try {
-      setLoading(true);
-      const response = await complaintsApi.getComplaintStatus(complaintId);
-      setComplaint(response.data);
+      await fetchComplaintStatus(complaintId);
     } catch (err) {
       setError('Complaint not found. Please check your Complaint ID.');
     } finally {
-      setLoading(false);
+      setIsAutoRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    if (!complaint?.id) {
+      return undefined;
+    }
+
+    setIsAutoRefreshing(true);
+
+    const intervalId = window.setInterval(async () => {
+      try {
+        await fetchComplaintStatus(complaint.id, { silent: true });
+      } catch (err) {
+        setIsAutoRefreshing(false);
+      }
+    }, 15000);
+
+    return () => {
+      setIsAutoRefreshing(false);
+      window.clearInterval(intervalId);
+    };
+  }, [complaint?.id]);
 
   const getStatusStep = (status) => {
     const steps = {
@@ -68,6 +106,12 @@ export default function ComplaintTracking() {
       {complaint && (
         <div className="complaint-status">
           <h3>Complaint Status</h3>
+          <div className="tracking-meta">
+            <span className={`tracking-pill ${isAutoRefreshing ? 'live' : ''}`}>
+              {isAutoRefreshing ? 'Auto-refreshing every 15 seconds' : 'Auto-refresh paused'}
+            </span>
+            {lastCheckedAt && <span className="tracking-last-checked">Last checked: {lastCheckedAt.toLocaleTimeString()}</span>}
+          </div>
 
           <div className="status-timeline">
             <div className={`timeline-step ${currentStep >= 1 ? 'active' : ''}`}>
@@ -117,7 +161,7 @@ export default function ComplaintTracking() {
 
           <div className="info-box">
             <p>
-              <strong>Need Help?</strong> If you have questions about your complaint, please contact the Police Accountability Office at accountability@detroitpd.org
+              <strong>Need Help?</strong> If you have questions about your complaint, please contact us at accountability@police.mu
             </p>
           </div>
         </div>

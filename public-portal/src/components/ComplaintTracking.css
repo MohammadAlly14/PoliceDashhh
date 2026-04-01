@@ -89,6 +89,36 @@
   margin-bottom: 25px;
 }
 
+.tracking-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.tracking-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: #e9eff3;
+  color: #415764;
+}
+
+.tracking-pill.live {
+  background: #e5f7ef;
+  color: #176941;
+}
+
+.tracking-last-checked {
+  font-size: 13px;
+  color: #617480;
+}
+
 .status-timeline {
   display: flex;
   align-items: center;
@@ -278,6 +308,10 @@
   .status-timeline {
     flex-direction: column;
     padding: 20px;
+  }
+
+  .tracking-meta {
+    align-items: flex-start;
   }
 
   .timeline-connector {

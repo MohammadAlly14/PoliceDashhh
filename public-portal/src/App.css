@@ -1,16 +1,16 @@
 /* App CSS for Public Portal */
 .app {
-  /* Already in index.css */
+  isolation: isolate;
 }
 
 .main-content {
-  animation: fadeIn 0.3s ease-in;
+  animation: fadeIn 0.45s ease-in;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;

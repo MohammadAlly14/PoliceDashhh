@@ -1,9 +1,52 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { connectRealtime, formatRealtimeEvent } from '../services/realtime';
 import './Dashboard.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 export default function Dashboard() {
-  // Sample data for charts
+  const [connectionState, setConnectionState] = useState('connecting');
+  const [liveEvents, setLiveEvents] = useState([]);
+  const [liveMetrics, setLiveMetrics] = useState({
+    totalComplaints: 0,
+    activeIncidents: 0,
+    distressAlerts: 0,
+    resolved: 0,
+  });
+
+  // Fetch live metrics from API
+  useEffect(() => {
+    const fetchMetrics = async () => {
+      try {
+        const [complaintsRes, incidentsRes] = await Promise.all([
+          fetch(`${API_URL}/complaints`),
+          fetch(`${API_URL}/incidents`),
+        ]);
+
+        const complaints = await complaintsRes.json();
+        const incidents = await incidentsRes.json();
+
+        const distressCount = incidents.filter(i => i.is_distress === true).length;
+        const resolvedCount = complaints.filter(c => c.status === 'resolved').length;
+
+        setLiveMetrics({
+          totalComplaints: complaints.length,
+          activeIncidents: incidents.filter(i => !i.is_distress).length,
+          distressAlerts: distressCount,
+          resolved: resolvedCount,
+        });
+      } catch (error) {
+        console.error('Failed to fetch metrics:', error);
+      }
+    };
+
+    fetchMetrics();
+    const interval = setInterval(fetchMetrics, 10000); // Refresh every 10 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  // Mock data for charts (in production, fetch from API)
   const complaintStatusData = [
     { name: 'Submitted', value: 45, fill: '#8884d8' },
     { name: 'Under Review', value: 32, fill: '#82ca9d' },
@@ -14,9 +57,9 @@ export default function Dashboard() {
   const incidentTypeData = [
     { name: 'Use of Force', value: 23 },
     { name: 'Misconduct', value: 18 },
-    { name: 'Excessive Ticketing', value: 12 },
+    { name: 'Excessive Enforcement', value: 12 },
     { name: 'Discrimination', value: 8 },
-    { name: 'Other', value: 9 },
+    { name: 'Officer Safety', value: 9 },
   ];
 
   const monthlyTrendData = [
@@ -29,18 +72,114 @@ export default function Dashboard() {
   ];
 
   const officerPerformanceData = [
-    { name: 'Officer A', complaints: 5, incidents: 3, rating: 7.8 },
-    { name: 'Officer B', complaints: 2, incidents: 1, rating: 9.2 },
-    { name: 'Officer C', complaints: 8, incidents: 6, rating: 5.4 },
-    { name: 'Officer D', complaints: 3, incidents: 2, rating: 8.6 },
-    { name: 'Officer E', complaints: 6, incidents: 4, rating: 6.9 },
+    { name: 'PC A', complaints: 5, incidents: 3, rating: 7.8 },
+    { name: 'PC B', complaints: 2, incidents: 1, rating: 9.2 },
+    { name: 'PC C', complaints: 8, incidents: 6, rating: 5.4 },
+    { name: 'PC D', complaints: 3, incidents: 2, rating: 8.6 },
+    { name: 'PC E', complaints: 6, incidents: 4, rating: 6.9 },
   ];
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#FF6B6B'];
 
+  useEffect(() => {
+    const socket = connectRealtime();
+    const eventNames = [
+      'complaint:submitted',
+      'complaint:status-updated',
+      'incident:created',
+      'incident:flagged',
+      'incident:distress',
+      'incident:location-update',
+      'incident:acknowledged',
+    ];
+
+    socket.on('connect', () => {
+      setConnectionState('live');
+    });
+
+    socket.on('disconnect', () => {
+      setConnectionState('offline');
+    });
+
+    socket.on('telemetry:welcome', () => {
+      setConnectionState('live');
+    });
+
+    eventNames.forEach((eventName) => {
+      socket.on(eventName, (payload) => {
+        const formattedEvent = formatRealtimeEvent(eventName, payload);
+
+        if (!formattedEvent) {
+          return;
+        }
+
+        setLiveEvents((currentEvents) => [formattedEvent, ...currentEvents].slice(0, 8));
+
+        // Update distress count if this is a distress event
+        if (eventName === 'incident:distress') {
+          setLiveMetrics((prev) => ({
+            ...prev,
+            distressAlerts: prev.distressAlerts + 1,
+          }));
+        }
+      });
+    });
+
+    return () => {
+      eventNames.forEach((eventName) => socket.off(eventName));
+      socket.disconnect();
+    };
+  }, []);
+
+  const dashboardMetrics = useMemo(
+    () => ({
+      totalComplaints: liveMetrics.totalComplaints + liveEvents.filter((event) => event.badge === 'NEW').length,
+      activeIncidents: liveMetrics.activeIncidents + liveEvents.filter((event) => event.badge === 'LIVE').length,
+      distressAlerts: liveMetrics.distressAlerts,
+      resolved: liveMetrics.resolved + liveEvents.filter((event) => event.title.includes('resolved')).length,
+      liveEvents: liveEvents.length,
+    }),
+    [liveMetrics, liveEvents]
+  );
+
+  const fallbackActivity = [
+    {
+      id: 'seed-1',
+      badge: 'NEW',
+      badgeClass: 'new',
+      title: 'Complaint intake channel initialized',
+      detail: 'Dashboard is ready to receive live complaint submissions and status changes.',
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 'seed-2',
+      badge: 'LIVE',
+      badgeClass: 'live',
+      title: 'Incident telemetry stream connected',
+      detail: 'Field incident broadcasts will appear here as soon as the backend emits them.',
+      timestamp: new Date().toISOString(),
+    },
+    {
+      id: 'seed-3',
+      badge: 'DISTRESS',
+      badgeClass: 'alert distress-medium',
+      title: 'System ready for officer safety alerts',
+      detail: 'Officer distress events and location tracking enabled.',
+      timestamp: new Date().toISOString(),
+    },
+  ];
+
+  const activityFeed = liveEvents.length > 0 ? liveEvents : fallbackActivity;
+
   return (
     <div className="dashboard">
-      <h2>📊 Dashboard & Analytics</h2>
+      <h2>📊 MPS Operational Dashboard</h2>
+      <div className={`telemetry-banner ${connectionState}`}>
+        <span className="telemetry-indicator" />
+        <span>
+          Real-time monitoring channel: <strong>{connectionState === 'live' ? 'connected' : connectionState}</strong>
+        </span>
+      </div>
 
       {/* Key Metrics */}
       <div className="metrics-grid">
@@ -48,8 +187,8 @@ export default function Dashboard() {
           <div className="metric-icon">📋</div>
           <div className="metric-content">
             <h4>Total Complaints</h4>
-            <p className="metric-value">120</p>
-            <p className="metric-change">↑ 8% this month</p>
+            <p className="metric-value">{dashboardMetrics.totalComplaints}</p>
+            <p className="metric-change">Public portal + intake submissions</p>
           </div>
         </div>
 
@@ -57,26 +196,37 @@ export default function Dashboard() {
           <div className="metric-icon">📹</div>
           <div className="metric-content">
             <h4>Active Incidents</h4>
-            <p className="metric-value">73</p>
-            <p className="metric-change">↓ 2% from last week</p>
+            <p className="metric-value">{dashboardMetrics.activeIncidents}</p>
+            <p className="metric-change">Field operational events</p>
           </div>
         </div>
 
         <div className="metric-card">
           <div className="metric-icon">✅</div>
           <div className="metric-content">
-            <h4>Resolved</h4>
-            <p className="metric-value">45</p>
-            <p className="metric-change">↑ 12% resolution rate</p>
+            <h4>Resolved Cases</h4>
+            <p className="metric-value">{dashboardMetrics.resolved}</p>
+            <p className="metric-change">Closed investigations</p>
           </div>
         </div>
 
         <div className="metric-card">
-          <div className="metric-icon">👮</div>
+          <div className="metric-icon">🚨</div>
           <div className="metric-content">
-            <h4>Active Officers</h4>
-            <p className="metric-value">287</p>
-            <p className="metric-change">5 on investigation</p>
+            <h4>Officer Safety Alerts</h4>
+            <p className="metric-value" style={{ color: dashboardMetrics.distressAlerts > 0 ? '#ff4444' : '#333' }}>
+              {dashboardMetrics.distressAlerts}
+            </p>
+            <p className="metric-change">Active distress incidents</p>
+          </div>
+        </div>
+
+        <div className="metric-card">
+          <div className="metric-icon">📡</div>
+          <div className="metric-content">
+            <h4>Live Events</h4>
+            <p className="metric-value">{dashboardMetrics.liveEvents}</p>
+            <p className="metric-change">Latest telecom feed events</p>
           </div>
         </div>
       </div>
@@ -133,7 +283,7 @@ export default function Dashboard() {
       {/* Charts Row 2 */}
       <div className="charts-row">
         <div className="chart-container full-width">
-          <h3>Monthly Trends</h3>
+          <h3>Monthly Trends - Complaints vs Incidents vs Resolved</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={monthlyTrendData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -152,7 +302,7 @@ export default function Dashboard() {
       {/* Officer Performance */}
       <div className="charts-row">
         <div className="chart-container full-width">
-          <h3>Officer Performance Overview</h3>
+          <h3>Police Constable Performance Overview</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={officerPerformanceData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -169,36 +319,18 @@ export default function Dashboard() {
 
       {/* Recent Activity */}
       <div className="recent-activity">
-        <h3>📌 Recent Activity</h3>
+        <h3>📡 Live Operations Feed</h3>
         <div className="activity-list">
-          <div className="activity-item">
-            <span className="activity-badge">NEW</span>
-            <div className="activity-text">
-              <p><strong>Complaint #1245 filed</strong> - Excessive force at Central Station</p>
-              <small>2 hours ago</small>
+          {activityFeed.map((activity) => (
+            <div key={activity.id} className={`activity-item ${activity.badgeClass ? (activity.badgeClass.includes('distress') ? 'distress-item' : '') : ''}`}>
+              <span className={`activity-badge ${activity.badgeClass || ''}`}>{activity.badge}</span>
+              <div className="activity-text">
+                <p><strong>{activity.title}</strong></p>
+                <p>{activity.detail}</p>
+                <small>{new Date(activity.timestamp).toLocaleString()}</small>
+              </div>
             </div>
-          </div>
-          <div className="activity-item">
-            <span className="activity-badge pending">PENDING</span>
-            <div className="activity-text">
-              <p><strong>Incident #856 investigation</strong> - Under administrative review</p>
-              <small>5 hours ago</small>
-            </div>
-          </div>
-          <div className="activity-item">
-            <span className="activity-badge resolved">RESOLVED</span>
-            <div className="activity-text">
-              <p><strong>Complaint #1240 closed</strong> - Officer misconduct investigation concluded</p>
-              <small>1 day ago</small>
-            </div>
-          </div>
-          <div className="activity-item">
-            <span className="activity-badge">NEW</span>
-            <div className="activity-text">
-              <p><strong>Officer investigation initiated</strong> - Officer ID #2847</p>
-              <small>2 days ago</small>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

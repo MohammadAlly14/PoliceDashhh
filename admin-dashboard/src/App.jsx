@@ -80,7 +80,8 @@ function App() {
     return (
       <div style={{ minHeight: '100vh', background: '#f5f5f5', padding: '20px' }}>
         <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-          <h1 style={{ color: '#003d5c' }}>🚔 Police Accountability Dashboard</h1>
+          <h1 style={{ color: '#003d5c' }}>🚔 Mauritius Police Service</h1>
+          <p style={{ color: '#666', fontSize: '16px' }}>Accountability & Transparency Platform</p>
         </div>
         <div style={{ maxWidth: '400px', margin: '0 auto', background: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
           <h2 style={{ color: '#003d5c', marginBottom: '20px' }}>Officer Login</h2>
@@ -108,7 +109,9 @@ function App() {
             {loginError && <div style={{ color: 'red', marginBottom: '15px', fontSize: '14px' }}>{loginError}</div>}
             <button type="submit" style={{ width: '100%', padding: '12px', background: '#003d5c', color: 'white', border: 'none', borderRadius: '4px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }}>Login</button>
           </form>
-          <p style={{ marginTop: '15px', fontSize: '12px', color: '#666', textAlign: 'center' }}>Demo: john@police.gov / password</p>
+          <p style={{ marginTop: '20px', fontSize: '13px', color: '#666', textAlign: 'center', background: '#f9f9f9', padding: '10px', borderRadius: '4px', borderLeft: '3px solid #f39200' }}>
+            <strong>Demo Credentials:</strong> <br />john@police.gov / password
+          </p>
         </div>
       </div>
     );
@@ -118,9 +121,9 @@ function App() {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#f5f5f5' }}>
       <header style={{ background: 'linear-gradient(135deg, #003d5c 0%, #003d5c 100%)', color: 'white', padding: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: '600', margin: 0 }}>🚔 Police Accountability Dashboard</h1>
+          <h1 style={{ fontSize: '24px', fontWeight: '600', margin: 0 }}>🚔 Mauritius Police Service • Accountability Platform</h1>
           <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-            <span>{user.name} ({user.role})</span>
+            <span>{user.name} ({user.role === 'admin' ? 'Senior Officer' : 'Police Constable'})</span>
             <button onClick={handleLogout} style={{ background: '#f39200', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', fontWeight: '500' }}>Logout</button>
           </div>
         </div>
@@ -161,7 +164,7 @@ function App() {
       </div>
 
       <footer style={{ background: '#003d5c', color: 'white', textAlign: 'center', padding: '20px', marginTop: 'auto' }}>
-        <p style={{ margin: 0 }}>© 2024 Mauritius Police Force • Accountability & Transparency Platform</p>
+        <p style={{ margin: 0 }}>© 2026 Mauritius Police Service • Accountability & Transparency Platform</p>
       </footer>
     </div>
   );

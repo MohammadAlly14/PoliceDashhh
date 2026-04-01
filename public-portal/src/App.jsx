@@ -5,15 +5,21 @@ import ComplaintTracking from './components/ComplaintTracking';
 import './App.css';
 
 function App() {
+    React.useEffect(() => {
+      console.log('App component mounted');
+    }, []);
+
   return (
-    <Router>
+    <Router onError={(error) => console.error('Router error:', error)}>
       <div className="app">
         <header className="header">
           <div className="header-content">
             <div className="logo-area">
-              <h1>🚔 Police Accountability Platform</h1>
-              <p>Transparency & Community Trust</p>
+              <p className="eyebrow">Mauritius Police Service</p>
+              <h1>Public Complaints & Accountability Portal</h1>
+              <p>Report misconduct and submit evidence securely. Monitor your case progression.</p>
             </div>
+            <div className="header-chip">24/7 Public Intake</div>
           </div>
         </header>
 
@@ -21,17 +27,17 @@ function App() {
           <ul>
             <li>
               <Link to="/" className="nav-link">
-                📝 Submit Complaint
+                Submit Complaint
               </Link>
             </li>
             <li>
               <Link to="/track" className="nav-link">
-                🔍 Track Complaint
+                Track Complaint
               </Link>
             </li>
             <li>
               <a href="#about" className="nav-link">
-                ℹ️ About
+                About
               </a>
             </li>
           </ul>
@@ -46,33 +52,33 @@ function App() {
 
         <section id="about" className="about-section">
           <div className="about-content">
-            <h2>About This Platform</h2>
+            <h2>How This Portal Works</h2>
             <div className="about-grid">
               <div className="about-card">
-                <h3>🤝 Community Voice</h3>
-                <p>Report incidents and help us build a more accountable police department. Your feedback matters.</p>
+                <h3>Report Against Any Party</h3>
+                <p>Submit complaints against police officers, civilians, organizations, or any identified individual.</p>
               </div>
               <div className="about-card">
-                <h3>📊 Transparency</h3>
-                <p>Track complaint status in real-time. See how incidents are being investigated and resolved.</p>
+                <h3>Attach Documentary Evidence</h3>
+                <p>Upload photos, videos, and supporting documents to strengthen your complaint.</p>
               </div>
               <div className="about-card">
-                <h3>🔒 Privacy Protected</h3>
-                <p>Your personal information is confidential. We follow strict data protection guidelines.</p>
+                <h3>Case Tracking</h3>
+                <p>Receive a complaint reference number and check your case status at each review stage.</p>
               </div>
               <div className="about-card">
-                <h3>⚖️ Fair Review</h3>
-                <p>All complaints are thoroughly reviewed by qualified investigators with full transparency.</p>
+                <h3>Confidential Intake</h3>
+                <p>Only authorized investigators can access your identifying information and evidence.</p>
               </div>
             </div>
           </div>
         </section>
 
         <footer className="footer">
-          <p>© 2024 Detroit Police Department • Public Accountability &amp; Transparency Initiative</p>
+          <p>© 2026 Mauritius Police Service • Public Complaints Office</p>
           <p>
             <small>
-              For emergency situations, always call 911. This platform is for non-emergency complaints and feedback.
+              For immediate emergencies, call 999. This portal is for non-emergency complaints and evidence submission.
             </small>
           </p>
         </footer>
