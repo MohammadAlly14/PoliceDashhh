@@ -1,0 +1,16 @@
+{
+  "name": "police-accountability-system",
+  "version": "1.0.0",
+  "description": "Police Software System with Public Accountability Platform",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "admin-dashboard",
+    "public-portal"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces"
+  }
+}
